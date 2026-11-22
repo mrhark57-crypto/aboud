@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>عبود</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f8;--cd:#fff;--tx:#111827;--mu:#6b7280;--ac:#0f766e;--bd:#e2e5ea;--ok:#15803d;--bad:#b91c1c;--pre:#eef1f4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0e1116;--cd:#181c23;--tx:#e8ebf0;--mu:#9aa3b0;--ac:#2dd4bf;--bd:#2a303a;--ok:#4ade80;--bad:#f87171;--pre:#0e1116}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0e1116;--cd:#181c23;--tx:#e8ebf0;--mu:#9aa3b0;--ac:#2dd4bf;--bd:#2a303a;--ok:#4ade80;--bad:#f87171;--pre:#0e1116}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;max-width:720px;margin-inline:auto;padding:12px}
+h1{font-size:20px;margin:6px 0 10px}h3{margin:0 0 6px;font-size:15px;color:var(--ac)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:10px;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:10px;font:inherit;font-weight:600}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+textarea,input,select{width:100%;background:var(--pre);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:110px;resize:vertical}
+textarea.code{direction:ltr;text-align:left;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;min-height:170px}
+.row{display:flex;gap:8px;margin-top:8px}.row>*{flex:1}
+.go{width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:inherit;font-weight:700}
+.go:disabled{opacity:.5}
+pre{direction:ltr;text-align:left;background:var(--pre);border-radius:8px;padding:10px;margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;max-height:340px;overflow:auto}
+.cp{float:left;border:1px solid var(--bd);background:transparent;color:var(--mu);border-radius:8px;padding:2px 10px;font:inherit;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k{background:var(--pre);border-radius:10px;padding:8px 10px}
+.k b{display:block;font-size:19px}.k span{color:var(--mu);font-size:13px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.mu{color:var(--mu);font-size:14px}
+svg{width:100%;height:150px;background:var(--pre);border-radius:10px;margin-top:8px}
+[hidden]{display:none!important}
+</style></head><body>
+<h1>🤖 عبود</h1>
+<div class="tabs"><button id="t1" class="on">فريق البرمجة</button><button id="t2">اختبار كود التداول</button></div>
+<div id="warn" class="card bad" hidden>الذكاء الاصطناعي غير متاح في هذا العرض. افتح التطبيق من حسابك على claude.ai.</div>
+
+<div id="kbox" class="card" hidden><h3>مفتاح API</h3><input id="kin" type="password" dir="ltr" placeholder="sk-ant-..."><button class="go" id="ksave">حفظ المفتاح</button><div class="mu">يُحفظ على جهازك فقط.</div></div>
+<section id="p1">
+<div class="card"><textarea id="task" placeholder="اكتب المهمة، مثال: سكربت بايثون يقرأ ملف CSV ويرسل تقريراً يومياً"></textarea>
+<button class="go" id="run">شغّل الفريق</button>
+<div class="mu" style="margin-top:6px">المخطط ← المبرمج ← المراجع ← الناتج النهائي</div></div>
+<div id="out"></div>
+</section>
+
+<section id="p2" hidden>
+<div class="card"><h3>الكود (MQL5 / Python / Pine / غيره)</h3>
+<textarea id="src" class="code" placeholder="الصق كود الاستراتيجية هنا"></textarea>
+<div class="row"><select id="reg"><option value="1">بيانات تجريبية 1</option><option value="2">بيانات تجريبية 2</option><option value="3">بيانات تجريبية 3</option></select>
+<input id="cost" type="number" step="0.01" value="0.02" aria-label="تكلفة الصفقة %"></div>
+<div class="mu">الحقل الثاني: تكلفة كل صفقة %</div>
+<textarea id="csv" class="code" style="min-height:70px;margin-top:8px" placeholder="اختياري: الصق أسعار الإغلاق (أرقام مفصولة بسطر أو فاصلة) بدل البيانات التجريبية"></textarea>
+<button class="go" id="test">اختبر الكود</button></div>
+<div id="tout"></div>
+</section>
+
+<script>
+const $=s=>document.querySelector(s);let sample=null;
+function getKey(){return new Promise(res=>{const k=localStorage.getItem('k');if(k)return res(k);const b=$('#kbox');b.hidden=false;$('#ksave').onclick=()=>{const v=$('#kin').value.trim();if(v){localStorage.setItem('k',v);b.hidden=true;res(v)}}})}
+sample=async(prompt,opts)=>{const k=await getKey();opts&&opts.onText&&opts.onText({text:'⏳ جارٍ العمل...'});
+const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:6000,messages:[{role:'user',content:prompt}]})});
+const j=await r.json();if(!r.ok){if(r.status==401)localStorage.removeItem('k');throw new Error((j.error&&j.error.message)||('HTTP '+r.status))}
+const text=j.content.map(x=>x.text||'').join('');opts&&opts.onText&&opts.onText({text});return{text}};
+function tab(n){$('#p1').hidden=n!=1;$('#p2').hidden=n!=2;$('#t1').className=n==1?'on':'';$('#t2').className=n==2?'on':''}
+$('#t1').onclick=()=>tab(1);$('#t2').onclick=()=>tab(2);
+function card(parent,title){const d=document.createElement('div');d.className='card';d.innerHTML='<button class="cp">نسخ</button><h3></h3><pre></pre>';d.querySelector('h3').textContent=title;const p=d.querySelector('pre');d.querySelector('.cp').onclick=e=>{try{navigator.clipboard.writeText(p.textContent);e.target.textContent='تم'}catch(x){}};parent.appendChild(d);return p}
+async function ask(prompt,box,tier){const r=await sample(prompt,{onText:({text})=>{box.textContent=text},modelTier:tier||'complex',cache:false});return r.text}
+function err(e){return (e&&(e.message||e.code))||'خطأ'}
+
+$('#run').onclick=async()=>{
+  const t=$('#task').value.trim();if(!t||!sample)return;const b=$('#run'),o=$('#out');b.disabled=true;o.innerHTML='';
+  try{
+    const a=await ask('You are the Planner in a software team. Break this task into a short numbered plan (max 7 steps): files, language, libraries, edge cases. Reply in Arabic, concise.\n\nTask: '+t,card(o,'1) المخطط'),'default');
+    const c=await ask('You are the Coder. Write complete, runnable code for the task following the plan. Put code in fenced blocks with file names. Beginner-friendly comments in Arabic. After the code, give run steps in 3 short lines (Arabic).\n\nTask: '+t+'\n\nPlan:\n'+a,card(o,'2) المبرمج'));
+    await ask('You are the Reviewer and Tester. Find bugs, security issues and missing edge cases in this code. Then output the FINAL corrected full code in fenced blocks, preceded by a short Arabic list of what you fixed.\n\nTask: '+t+'\n\nCode:\n'+c,card(o,'3) المراجع والنسخة النهائية'));
+  }catch(e){const p=card(o,'خطأ');p.textContent=err(e)}
+  b.disabled=false};
+
+function gen(n,seed){let s=seed*7919+13,r=()=>(s=(s*16807)%2147483647)/2147483647,p=100,d=0,o=[];
+  for(let i=0;i<n;i++){if(i%150==0)d=(r()-.5)*.004;const op=p,c=op*(1+d+(r()-.5)*.02);o.push({o:op,h:Math.max(op,c)*(1+r()*.004),l:Math.min(op,c)*(1-r()*.004),c});p=c}return o}
+function fromCsv(t){const v=t.split(/[\s,;]+/).map(Number).filter(x=>x>0&&isFinite(x));if(v.length<30)return null;
+  return v.map((c,i)=>{const op=i?v[i-1]:c;return{o:op,h:Math.max(op,c),l:Math.min(op,c),c}})}
+function bt(cs,pos,cost){let eq=1,pk=1,dd=0,prev=0,ent=1,tr=[],cv=[1];
+  for(let i=1;i<cs.length;i++){const p=Math.sign(+pos[i-1]||0);
+    if(p!==prev){if(prev!==0)tr.push(eq/ent-1);eq*=1-cost/100*Math.abs(p-prev);if(p!==0)ent=eq;prev=p}
+    eq*=1+p*(cs[i].c/cs[i-1].c-1);cv.push(eq);pk=Math.max(pk,eq);dd=Math.max(dd,1-eq/pk)}
+  if(prev!==0)tr.push(eq/ent-1);
+  return{ret:(eq-1)*100,n:tr.length,win:tr.length?tr.filter(x=>x>0).length/tr.length*100:0,dd:dd*100,bh:(cs[cs.length-1].c/cs[0].c-1)*100,cv}}
+
+$('#test').onclick=async()=>{
+  const src=$('#src').value.trim();if(!src||!sample)return;const b=$('#test'),o=$('#tout');b.disabled=true;o.innerHTML='';
+  try{
+    const cs=fromCsv($('#csv').value)||gen(1200,+$('#reg').value);
+    const box=card(o,'ترجمة الكود إلى اختبار');
+    const txt=await ask('Convert this trading strategy (any language: MQL5, Python, Pine...) into ONE JavaScript function named strategy(candles). candles = array of {o,h,l,c}. Return an array of the same length: 1 = long, -1 = short, 0 = flat, decided at the close of bar i using ONLY data up to index i (no lookahead). Implement indicators (EMA, RSI, ATR...) yourself. Approximate multi-timeframe by aggregating bars. Output a ```js block with only the function, then up to 4 short Arabic bullet lines on assumptions or anything simplified.\n\nCode:\n'+src,box,'default');
+    const m=txt.match(/```(?:js|javascript)?\s*\n([\s\S]*?)```/);if(!m)throw new Error('لم أستطع استخراج الدالة من الرد');
+    const pos=new Function(m[1]+'\nreturn strategy;')()(cs.map(x=>({...x})));
+    if(!Array.isArray(pos)||pos.length!==cs.length)throw new Error('الدالة لم ترجع مصفوفة بنفس عدد الشموع');
+    const r=bt(cs,pos,+$('#cost').value||0),f=x=>x.toFixed(1)+'%',cl=x=>x>=0?'ok':'bad';
+    const mn=Math.min(...r.cv),mx=Math.max(...r.cv),pts=r.cv.map((v,i)=>(i/(r.cv.length-1)*300).toFixed(1)+','+(70-(v-mn)/(mx-mn||1)*64).toFixed(1)).join(' ');
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML='<h3>النتيجة (على '+cs.length+' شمعة)</h3><div class="grid"><div class="k"><span>عائد الاستراتيجية</span><b class="'+cl(r.ret)+'">'+f(r.ret)+'</b></div><div class="k"><span>الشراء والاحتفاظ</span><b>'+f(r.bh)+'</b></div><div class="k"><span>عدد الصفقات</span><b>'+r.n+'</b></div><div class="k"><span>نسبة الصفقات الرابحة</span><b>'+f(r.win)+'</b></div><div class="k"><span>أقصى تراجع</span><b class="bad">'+f(r.dd)+'</b></div></div><svg viewBox="0 0 300 76" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ac)" points="'+pts+'"/></svg><div class="mu" style="margin-top:6px">اختبار تقريبي على بيانات تجريبية أو الأسعار التي لصقتها، وليس بديلاً عن Strategy Tester في MT5. جرّب على بيانات حقيقية قبل أي تداول بمال حقيقي.</div>';
+    o.appendChild(d);
+  }catch(e){const p=card(o,'تعذّر الاختبار');p.textContent=err(e)}
+  b.disabled=false};
+</script></body></html>
